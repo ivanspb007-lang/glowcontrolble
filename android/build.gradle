@@ -1,6 +1,17 @@
-buildscript {
-    ext { buildToolsVersion = "35.0.0"; minSdkVersion = 24; compileSdkVersion = 35; targetSdkVersion = 35; ndkVersion = "27.1.12297006"; kotlinVersion = "2.1.20" }
-    repositories { google(); mavenCentral() }
-    dependencies { classpath("com.android.tools.build:gradle:8.9.2"); classpath("com.facebook.react:react-native-gradle-plugin"); classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion") }
+pluginManagement {
+    includeBuild("../node_modules/@react-native/gradle-plugin")
 }
-apply plugin: "com.facebook.react.rootproject"
+
+plugins {
+    id("com.facebook.react.settings")
+}
+
+extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
+    ex.autolinkLibrariesFromCommand()
+}
+
+rootProject.name = "GlowBLE"
+
+include(":app")
+
+includeBuild("../node_modules/@react-native/gradle-plugin")
