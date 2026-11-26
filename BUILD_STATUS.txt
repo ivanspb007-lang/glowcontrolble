@@ -1,0 +1,2 @@
+SP110E support added: BLE service FFE0, characteristic FFE1, optional FFE2/FFE1 initialization, RGB, brightness and speed packets.
+APK NOT BUILT IN THIS ENVIRONMENT: Android SDK/build-tools and Gradle wrapper JAR are unavailable. Build on Android Studio/SDK using README.md.
