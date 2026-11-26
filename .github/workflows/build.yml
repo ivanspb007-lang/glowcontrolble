@@ -1,1 +1,87 @@
+name: Build GlowBLE APK
 
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Setup Android SDK
+        run: |
+          SDK_ROOT="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          echo "ANDROID_HOME=$SDK_ROOT" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> $GITHUB_ENV
+
+          SDKMANAGER=$(find "$SDK_ROOT/cmdline-tools" -name sdkmanager -type f | head -n 1)
+
+          if [ -z "$SDKMANAGER" ]; then
+            echo "sdkmanager not found"
+            exit 1
+          fi
+
+          yes | "$SDKMANAGER" --licenses || true
+
+          "$SDKMANAGER" \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0" \
+            "ndk;27.1.12297006"
+
+      - name: Generate Gradle Wrapper
+        run: |
+          mkdir -p /tmp/wrapper-gen
+          cd /tmp/wrapper-gen
+
+          echo "tasks.register('dummy')" > build.gradle
+
+          gradle wrapper \
+            --gradle-version 8.13 \
+            --distribution-type bin
+
+          mkdir -p "$GITHUB_WORKSPACE/android/gradle/wrapper"
+
+          cp gradlew "$GITHUB_WORKSPACE/android/"
+          cp gradlew.bat "$GITHUB_WORKSPACE/android/"
+          cp gradle/wrapper/* "$GITHUB_WORKSPACE/android/gradle/wrapper/"
+
+          chmod +x "$GITHUB_WORKSPACE/android/gradlew"
+
+      - name: Check Android project
+        run: |
+          test -f android/app/build.gradle
+          test -f android/build.gradle
+          test -f android/settings.gradle
+          test -f android/gradle.properties
+          echo "Android project files found"
+
+      - name: Build Debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: GlowBLE-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
